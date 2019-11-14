@@ -1,4 +1,4 @@
-# system lib
+# syslib
 import sys
 import os
 import multiprocessing
@@ -14,6 +14,7 @@ from pyas.variant_generator import VariantGenerator
 class Transcoder:
   __instance = None
 
+
   @staticmethod
   def get_instance():
     if Transcoder.__instance is None:
@@ -26,18 +27,22 @@ class Transcoder:
       raise Exception("singleton violation, use get_instance")
 
 
-  def sw_transcode(self, input_filename, codec, container, bitrate, resolution,
-      output_filename):
+  def sw_transcode(self, input_filename, codec, container, avg_br,
+      min_br, max_br, bufsize, resolution, output_filename):
     # To tell ffmpeg to read from stdin/write to stdout, use 'pipe:' as the
     # filename.
 
     output_args = {
-      'threads': multiprocessing.cpu_count(),
+      #'threads': multiprocessing.cpu_count(),
+      'threads': 0,
       'preset': 'fast',
       'vcodec': codec,
       'acodec': 'copy',
       's': resolution,
-      'b:v': bitrate,
+      'b:v': avg_br,
+      'minrate': min_br,
+      'maxrate': max_br,
+      'bufsize': bufsize,
       'f': container
     }
 
@@ -46,7 +51,7 @@ class Transcoder:
         ffmpeg
           .input(input_filename)
           .output(output_filename, **output_args)
-          .run()
+          .run(overwrite_output=True)
     )
     execution_time = (time.time() - start_time)
     return execution_time
@@ -69,19 +74,19 @@ class Transcoder:
       return None, None
 
 
-  def gpu_transcode(self, input_filename, codec, container, bitrate,
-      resolution, output_filename):
-
-
+  def gpu_transcode(self, input_filename, codec, container, avg_br,
+      min_br, max_br, bufsize, resolution, output_filename):
     decoder, encoder = self.accelerated_codec_convert(codec=codec)
     if decoder is None and encoder is None:
       raise_exception(self.__name__, sys._getframe().f_code.co_name,
           "this codec is not supported by Nividia GPU")
 
     input_args = {
-      'hwaccel': 'nvdec',
+      'hwaccel_device': 0,
+      'hwaccel': 'cuvid',
       'vcodec': decoder,
       'c:v': decoder,
+      'resize': resolution,
       'vsync': 0
     }
 
@@ -89,18 +94,19 @@ class Transcoder:
       'acodec': 'copy',
       'vcodec': encoder,
       'c:v': encoder,
-      'preset': 'fast',
-      'b:v': bitrate,
+      'b:v': avg_br,
+      'minrate': min_br,
+      'maxrate': max_br,
+      'bufsize': bufsize,
       'f': container
     }
-
 
     start_time = time.time()
     (
       ffmpeg
         .input(input_filename, **input_args)
         .output(output_filename, **output_args)
-        .run()
+        .run(overwrite_output=True)
     )
     execution_time = (time.time() - start_time)
     return execution_time
@@ -111,7 +117,8 @@ if __name__ == "__main__":
 
   repo_home = os.environ['REPO_HOME']
   input_video = os.path.join(repo_home, "input/5sec.mp4")
-  output_video = os.path.join(repo_home, "output/test_out.mp4")
+  sw_output_video = os.path.join(repo_home, "output/test_out.mp4")
+  acc_output_video = os.path.join(repo_home, "output/acc_test_out.mp4")
   prober = Prober.get_instance()
   transcoder = Transcoder.get_instance()
 
@@ -121,12 +128,14 @@ if __name__ == "__main__":
   print("probe execution time: {0:.3f}ms".format(execution_time))
 
   sw_trans = transcoder.sw_transcode(input_filename=input_video,
-      codec='libx264', container='mp4', bitrate=3000000,
-      resolution='1920x1080', output_filename=output_video)
+      codec='libx264', container='mp4', avg_br='4M', min_br=2500000,
+      max_br='5M', bufsize='8M', resolution='1920x1080',
+      output_filename=sw_output_video)
 
   gpu_trans = transcoder.gpu_transcode(input_filename=input_video,
-      codec='libx264', container='mp4', bitrate=3000000,
-      resolution='1920x1080', output_filename=output_video)
+      codec='libx264', container='mp4', avg_br='4M', min_br='3M',
+      max_br='5M', bufsize='4M', resolution='1920x1080',
+      output_filename=acc_output_video)
 
   print("*  *  *  *  *  *  *  *  *  *  *  *")
   print("\tsw transcoding time: ", sw_trans)
