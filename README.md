@@ -50,5 +50,5 @@ cd FFmpeg && PKG_CONFIG_PATH="$FFMPEG_HOME/ffmpeg_build/lib/pkgconfig" &&
   make install
 
 export PATH=$FFMPEG_HOME/bin:$PATH
-export PYTHONPATH=$FFMPEG_HOME/python
+export PYTHONPATH=$REPO_HOME/python
 ```
