@@ -74,6 +74,7 @@ class Experimenter:
           for resolution, zipped_br in zip(resolutions, zipped_brs):
             #i = len(zipped_br)   # for the order of exported data
             for br_set in zipped_br:
+              time.sleep(2)   # for profile...
               if(acceleration is True):
                 output_fn = "acc_" + resolution + "_" +  "_" \
                     + br_set['avg'] + "." + container
@@ -124,6 +125,7 @@ class Experimenter:
 
 
 if __name__ == "__main__":
+  from data_exporter import *
   repo_home = os.environ['REPO_HOME']
   input_dir = os.path.join(repo_home, "input")
   output_dir = os.path.join(repo_home, "output")
@@ -132,51 +134,13 @@ if __name__ == "__main__":
   codecs = ['libx264']
   containers = ['mp4']
 
-  sw_sucess_res, sw_failed_res = \
-      experimenter.do_experiment(input_dir, output_dir, codecs, containers,
-      acceleration=False)
-
-  acc_success_res, acc_failed_res = \
-      experimenter.do_experiment(input_dir, output_dir, codecs, containers,
-      acceleration=True)
-
-  experimenter.export_result(sw_sucess_res, "sw_res.csv")
-  experimenter.export_result(acc_success_res, "acc_res.csv")
-
-  print("*  *  *  *  *  * SW Transcoder  *  *  *  *  *  *")
-  print("\tSuccess  *  *  *  *  *  *  *  *  *  *  *  *  *")
-  keys = sw_sucess_res.keys()
-  for key in keys:
-    print("\t", key, ": {0:.3f}s".format(sw_sucess_res[key]))
-  print("\tFailure  *  *  *  *  *  *  *  *  *  *  *  *  *")
-  keys = sw_failed_res.keys()
-  for key in keys:
-    print("\t", key, ": {0:.3f}s".format(sw_failed_res[key]))
-
-  print("*  *  *  *  *  * HW Transcoder  *  *  *  *  *  *")
-  print("\tSuccess  *  *  *  *  *  *  *  *  *  *  *  *  *")
-  keys = acc_success_res.keys()
-  for key in keys:
-    print("\t", key, ": {0:.3f}s".format(acc_success_res[key]))
-  print("\tFailure  *  *  *  *  *  *  *  *  *  *  *  *  *")
-  keys = acc_failed_res.keys()
-  for key in keys:
-    print("\t", key, ": {0:.3f}s".format(acc_failed_res[key]))
-  print("*  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *  *")
-
-  prober = Prober.get_instance()
-  videos = (input_videos for input_videos in os.listdir(input_dir))
-  for video in videos:
-    fn = video.split('.')[0]
-    for codec in codecs:
-      target_dir = os.path.join(output_dir, fn)
-      target_dir = os.path.join(target_dir, codec)
-      prober.print_video_info(target_dir)
-
-
   profiler = Profiler.get_instance()
-  res, usage = profiler.profile_cpu(experimenter.do_experiment,
+  res, dps, columns, values = profiler.profile_cpu(5,
+      experimenter.do_experiment,
       [input_dir, output_dir, codecs, containers, False])
-  for key in usage.keys():
-    print("key/val: ", key, usage[key])
+
+  sw_sucess_res = res[0]
+  sw_failed_res = res[1]
+  experimenter.export_result(sw_sucess_res, "sw_res.csv")
+  write_csv(output_dir, 'cpu_usage.csv', dps, columns, values)
 
