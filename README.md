@@ -51,4 +51,9 @@ cd FFmpeg && PKG_CONFIG_PATH="$FFMPEG_HOME/ffmpeg_build/lib/pkgconfig" &&
 
 export PATH=$FFMPEG_HOME/bin:$PATH
 export PYTHONPATH=$REPO_HOME/python
+
+# install mp4box
+cd gpac && ./configure --static-mp4box --use-zlib=no
+make -j4
+export PATH=$REPO_HOME/gpac/bin/gcc:$PATH
 ```
