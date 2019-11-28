@@ -175,8 +175,6 @@ if __name__ == "__main__":
 
 
   profiler = Profiler.get_instance()
-  res, usage = profiler.profile_cpu(experimenter.do_experiment,
-      [input_dir, output_dir, codecs, containers, False])
-  for key in usage.keys():
-    print("key/val: ", key, usage[key])
-
+  res, datapoints, columns, values = profiler.profile_cpu(30,
+                            experimenter.do_experiment,
+                            [input_dir, output_dir, codecs, containers, False])
