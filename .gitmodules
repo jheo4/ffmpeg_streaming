@@ -4,3 +4,6 @@
 [submodule "nv-codec-headers"]
 	path = nv-codec-headers
 	url = https://github.com/FFmpeg/nv-codec-headers
+[submodule "gpac"]
+	path = gpac
+	url = https://github.com/gpac/gpac.git

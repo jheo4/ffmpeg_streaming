@@ -2,9 +2,6 @@
 import os
 import time
 
-# ffmpeg
-import ffmpeg
-
 # data processing
 import pandas as pd
 
