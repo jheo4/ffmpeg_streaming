@@ -1,6 +1,12 @@
 # ffmpeg_streaming
 
 ## Setup
+### NodeJS and NPM
+```
+sudo apt install nodejs
+sudo apt install npm
+```
+
 ### FFMPEG with CUDA
 1. Install nvidia driver (>= 435.21)
 2. Clone & install ffmpeg
