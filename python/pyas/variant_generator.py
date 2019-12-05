@@ -36,12 +36,9 @@ class VariantGenerator:
 
     results = []
     for i in range (3, -1, -1):
-      avg_br = max_bitrate - (offset * i)
-      min_br = avg_br - half_offset
-      max_br = avg_br + half_offset
+      br = max_bitrate - (offset * i)
+      results.append(str(br))
 
-      results.append( {'avg': str(avg_br), 'min': str(min_br),
-        'max': str(max_br)})
     return results
 
 
@@ -81,29 +78,10 @@ class VariantGenerator:
     return resolutions, zipped_bitrates
 
 
-  def calculate_dash_bitrates(self, original_bitrate, base_bitrates):
-    if(original_bitrate > base_bitrates):
-      offset = int(base_bitrates/4)
-      max_bitrate = base_bitrates
-    else:
-      offset = int(original_bitrate/4)
-      max_bitrate = original_bitrate
-
-    half_offset = int(offset/2)
-    avg_br = max_bitrate
-    min_br = avg_br - half_offset
-    max_br = avg_br + half_offset
-
-    results = []
-    results.append( {'avg': str(avg_br), 'min': str(min_br),
-      'max': str(max_br)})
-    return results
-
-
   def get_dash_variant_list(self, input):
     width, height, framerate, bitrate = self.prober.get_video_info(input)
     resolutions = []
-    zipped_bitrates = []
+    bitrates = []
 
     if framerate > 35:
       base_bitrates = {
@@ -124,30 +102,28 @@ class VariantGenerator:
 
     if(height >= 480): # 480
       resolutions.append("720x480")
-      bitrates = self.calculate_dash_bitrates(bitrate, base_bitrates['480'])
-      zipped_bitrates.append(bitrates)
-
+      br = bitrate if bitrate < base_bitrates['480'] else base_bitrates['480']
+      bitrates.append(str(br))
     if(height >= 720): # 720
       resolutions.append("1280x720")
-      bitrates = self.calculate_dash_bitrates(bitrate, base_bitrates['720'])
-      zipped_bitrates.append(bitrates)
-
+      br = bitrate if bitrate < base_bitrates['720'] else base_bitrates['720']
+      bitrates.append(str(br))
     if(height >= 1080): # 1080
       resolutions.append("1920x1080")
-      bitrates = self.calculate_dash_bitrates(bitrate, base_bitrates['1080'])
-      zipped_bitrates.append(bitrates)
+      br = bitrate if bitrate < base_bitrates['1080'] else base_bitrates['1080']
+      bitrates.append(str(br))
 
     if(height >= 1440): # 1440
       resolutions.append("2560x1440")
-      bitrates = self.calculate_dash_bitrates(bitrate, base_bitrates['1440'])
-      zipped_bitrates.append(bitrates)
+      br = bitrate if bitrate < base_bitrates['1440'] else base_bitrates['1440']
+      bitrates.append(str(br))
 
     if(height >= 2160): # 2160
       resolutions.append("3840x2160")
-      bitrates = self.calculate_dash_bitrates(bitrate, base_bitrates['2160'])
-      zipped_bitrates.append(bitrates)
+      br = bitrate if bitrate < base_bitrates['2160'] else base_bitrates['2160']
+      bitrates.append(str(br))
 
-    return resolutions, zipped_bitrates
+    return resolutions, bitrates
 
 
 if __name__ == "__main__":

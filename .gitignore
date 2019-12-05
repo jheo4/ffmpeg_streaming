@@ -106,4 +106,6 @@ venv.bak/
 # project specific
 output/
 *.swp
-
+*.mpd
+*.m3u8
+*.m4s

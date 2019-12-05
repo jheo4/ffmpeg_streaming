@@ -33,6 +33,7 @@ class Transcoder:
     command.extend(in_args)
     command.extend(out_args)
 
+    print(command)
     start_time = time.time()
     subprocess.run(command)
     execution_time = (time.time() - start_time)
@@ -57,7 +58,7 @@ class Transcoder:
     return '{}:{}'.format(x, y)
 
 
-  def sw_transcode(self, input, codec, container, brs, buf, res, output):
+  def sw_transcode(self, input, codec, container, br, buf, res, output):
     # To tell ffmpeg to read from stdin/write to stdout, use 'pipe:' as the
     # filename.
 
@@ -71,9 +72,7 @@ class Transcoder:
       '-vcodec', codec,
       '-acodec', 'copy',
       '-s', res,
-      '-b:v', brs['avg'],
-      '-minrate', brs['min'],
-      '-maxrate', brs['max'],
+      '-b:v', br,
       '-bufsize', buf,
       '-f', container,
       output
@@ -99,7 +98,7 @@ class Transcoder:
       return None, None
 
 
-  def gpu_transcode(self, input, codec, container, brs, buf, res, output):
+  def gpu_transcode(self, input, codec, container, br, buf, res, output):
     decoder, encoder = self.accelerated_codec_convert(codec=codec)
     if decoder is None and encoder is None:
       raise_exception(self.__name__, sys._getframe().f_code.co_name,
@@ -119,9 +118,7 @@ class Transcoder:
       '-acodec', 'copy',
       '-vcodec', encoder,
       '-c:v', encoder,
-      '-b:v', brs['avg'],
-      '-minrate', brs['min'],
-      '-maxrate', brs['max'],
+      '-b:v', br,
       '-bufsize', buf,
       '-f', container,
       output
@@ -147,7 +144,7 @@ class Transcoder:
     in_args = [
       '-re',
       '-stream_loop', '-0',
-      '-i', input
+      '-i', str(input)
     ]
 
     out_args = [
@@ -187,9 +184,8 @@ class Transcoder:
       '-seg_duration', '5',
       '-streaming', '1',
       '-f', container,
-      output
+      str(output)
     ]
-
     return self.run_ffmpeg(in_args, out_args)
 
 
@@ -267,25 +263,21 @@ if __name__ == "__main__":
   acc_output_mpd = os.path.join(repo_home, "output/acc_test_out.mpd")
 
   transcoder = Transcoder.get_instance()
-
   sw_trans = transcoder.sw_transcode(input=input_video,
-      codec='libx264', container='mp4', brs={'avg': '4M', 'min': '3M',
-        'max': '5M'}, buf='16M', res='1920x1080', output=sw_output_video)
-
+      codec='libx264', container='mp4', br='4M', buf='16M', res='1920x1080',
+      output=sw_output_video)
   sw_mpd = transcoder.sw_generate_mpd(input=input_video, codec='libx264',
       container='dash', brs=['1M', '2M', '3M', '4M', '5M'], buf='16M',
       res=['720x480', '1280x720', '1920x1080', '2560x1440', '3840x2160'],
       output=sw_output_mpd)
 
   gpu_trans = transcoder.gpu_transcode(input=input_video,
-      codec='libx264', container='mp4', brs={'avg': '4M', 'min': '3M',
-        'max': '5M'}, buf='8M', res='1920x1080', output=sw_output_video)
-
+      codec='libx264', container='mp4', br='4M', buf='8M', res='1920x1080',
+      output=sw_output_video)
   gpu_mpd = transcoder.gpu_generate_mpd(input=input_video, codec='libx264',
       container='mp4', brs=['1M', '2M', '3M', '4M', '5M'], buf='16M',
       res=['720x480', '1280x720'],
       output=acc_output_mpd)
-
 
   print("*  *  *  *  *  *  *  *  *  *  *  *")
   print("\tsw transcoding time: ", sw_trans)

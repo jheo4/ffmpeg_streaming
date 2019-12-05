@@ -1,6 +1,7 @@
 # syslib
 import os
 import time
+from pathlib import Path
 
 # data processing
 import pandas as pd
@@ -31,33 +32,31 @@ class Experimenter:
 
 
   def create_dir(self, output_dir, video_name, codec):
-    dir_path = os.path.join(output_dir, video_name)
-    if not os.path.exists(dir_path):
-      os.mkdir(dir_path, 0o755)
-    dir_path = os.path.join(dir_path, codec)
-    if not os.path.exists(dir_path):
-      os.mkdir(dir_path, 0o755)
+    output_dir = Path(output_dir)
+    dir_path = output_dir / video_name / codec
+    dir_path.mkdir(parents=True, exist_ok=True)
     return dir_path
 
 
   def do_experiment(self, input_dir='input', output_dir='output',
       codecs='libx264', containers='mp4', acceleration=False):
-    if not os.path.exists(input_dir):
+    input_dir = Path(input_dir)
+    output_dir = Path(output_dir)
+    if not input_dir.isdir():
       raise_exception(Experimenter.__name__, sys._getframe().f_code.co_name,
           "input dir does not exist")
     if not os.listdir(input_dir):
       raise_exception(Experimenter.__name__, sys._getframe().f_code.co_name,
         "input dir is empty")
-    if not os.path.exists(output_dir):
-      os.mkdir(output_dir, 0o755)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    input_videos = (input_video for input_video in os.listdir(input_dir))
+    input_videos = (input_video.name for input_video in input_dir.iterdir())
     buf_size = '8M'
     success_result = {}
     failed_result = {}
     # (videos)*(codecs)*(bitrates)*(resolutions) = total variants
     for input_video in input_videos:
-      video_name_with_path = os.path.join(input_dir, input_video)
+      video_name_with_path = input_dir / input_video
       resolutions, zipped_brs = \
           self.variant_generator.get_variant_list(video_name_with_path)
 
@@ -79,7 +78,7 @@ class Experimenter:
                     + "." + container
               #i -= 1
 
-              target_output = os.path.join(target_dir, output_fn)
+              target_output = target_dir / output_fn
 
               start_time = time.time()
               if(acceleration is True):
@@ -107,10 +106,10 @@ class Experimenter:
     if not bool(res_dict):
       raise_exception(Experimenter.__name__, sys._getframe().f_code.co_name,
           "the given dictionary is empty")
-
-    repo_home = os.environ['REPO_HOME']
-    output_dir = os.path.join(repo_home, "output")
-    output_res = os.path.join(output_dir, out_fn)
+    repo_home = Path(os.environ['REPO_HOME'])
+    output_dir = repo_home / 'output'
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_res = output_dir / out_fn
     keys = list(res_dict.keys())
     values = list(res_dict.values())
     data = pd.DataFrame({
@@ -121,9 +120,9 @@ class Experimenter:
 
 
 if __name__ == "__main__":
-  repo_home = os.environ['REPO_HOME']
-  input_dir = os.path.join(repo_home, "input")
-  output_dir = os.path.join(repo_home, "output")
+  repo_home = Path(os.environ['REPO_HOME'])
+  input_dir = repo_home / 'input'
+  output_dir = repo_hom / 'output'
 
   experimenter = Experimenter.get_instance()
   codecs = ['libx264']
@@ -166,8 +165,8 @@ if __name__ == "__main__":
   for video in videos:
     fn = video.split('.')[0]
     for codec in codecs:
-      target_dir = os.path.join(output_dir, fn)
-      target_dir = os.path.join(target_dir, codec)
+      target_dir = output_dir / fn
+      target_dir = target_dir / codec
       prober.print_video_info(target_dir)
 
 
